@@ -37,13 +37,13 @@
 
             container.innerHTML = ''; // Limpa o container
 
-            if (input && !isNaN(input)) {
+            if (input) {
                 const canvas = document.createElement('canvas');
                 container.appendChild(canvas);
 
-                // Gera o código de barras
+                // Gera o código de barras com o formato CODE128
                 JsBarcode(canvas, input, {
-                    format: "EAN13", // Formato padrão, ajuste conforme necessário
+                    format: "CODE128", // Formato que aceita 14 dígitos ou mais
                     displayValue: true,
                     lineColor: "#000",
                     width: 2,
