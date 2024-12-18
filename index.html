@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerador de Código de Barras</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            text-align: center;
+        }
+        input, button {
+            margin: 10px;
+            padding: 10px;
+            font-size: 16px;
+        }
+        canvas {
+            margin: 20px auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Gerador de Código de Barras</h1>
+    <label for="barcode-input">Digite o número do código de barras:</label>
+    <input type="text" id="barcode-input" placeholder="Ex: 15603722505604" />
+    <button onclick="generateBarcode()">Gerar Código</button>
+
+    <div id="barcode-container"></div>
+
+    <!-- Importa a biblioteca JsBarcode -->
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.0/dist/JsBarcode.all.min.js"></script>
+    <script>
+        function generateBarcode() {
+            const input = document.getElementById('barcode-input').value.trim();
+            const container = document.getElementById('barcode-container');
+
+            container.innerHTML = ''; // Limpa o container
+
+            if (input && !isNaN(input)) {
+                const canvas = document.createElement('canvas');
+                container.appendChild(canvas);
+
+                // Gera o código de barras
+                JsBarcode(canvas, input, {
+                    format: "EAN13", // Formato padrão, ajuste conforme necessário
+                    displayValue: true,
+                    lineColor: "#000",
+                    width: 2,
+                    height: 60
+                });
+            } else {
+                alert("Por favor, insira um número válido.");
+            }
+        }
+    </script>
+</body>
+</html>
