@@ -42,12 +42,6 @@
             font-size: 16px;
             display: none;
         }
-        #copied-message {
-            margin-top: 10px;
-            font-size: 14px;
-            color: green;
-            display: none;
-        }
     </style>
 </head>
 <body>
@@ -66,7 +60,7 @@
     <button onclick="validateImage()">Validar Código de Barras</button>
 
     <!-- Exibição do carregamento -->
-    <div id="loading-message">Processando a imagem, por favor, aguarde...</div>
+    <div id="loading-message">Processando...</div>
 
     <!-- Exibir a imagem carregada -->
     <img id="uploaded-image" src="" alt="Imagem do código de barras" style="display:none;" />
@@ -135,9 +129,8 @@
             // Limpa mensagens anteriores
             successMessage.style.display = 'none';
             errorMessage.style.display = 'none';
-
-            // Exibe o indicador de carregamento
             loadingMessage.style.display = 'block';
+            loadingMessage.innerText = "Processando...";
 
             const reader = new FileReader();
             reader.onload = function(e) {
@@ -149,9 +142,14 @@
                 uploadedImage.style.display = 'block';
 
                 img.onload = function() {
+                    const timeout = setTimeout(() => {
+                        loadingMessage.innerText = "Processo expirou, tente novamente.";
+                        loadingMessage.style.color = 'red';
+                    }, 10000); // Timeout de 10 segundos
+
                     readBarcodeFromImage(img)
                         .then(result => {
-                            // Esconde o indicador de carregamento
+                            clearTimeout(timeout); // Cancela o timeout
                             loadingMessage.style.display = 'none';
 
                             // Exibe a mensagem de sucesso
@@ -170,7 +168,7 @@
                             generateBarcode();
                         })
                         .catch(err => {
-                            // Esconde o indicador de carregamento
+                            clearTimeout(timeout); // Cancela o timeout
                             loadingMessage.style.display = 'none';
 
                             // Exibe a mensagem de erro
