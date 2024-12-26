@@ -7,21 +7,22 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            margin: 20px;
             text-align: center;
+            margin: 20px;
         }
         input, button {
             margin: 10px;
             padding: 10px;
             font-size: 16px;
         }
+        #barcode-container {
+            margin: 20px auto;
+        }
         #reader {
             width: 100%;
             max-width: 400px;
             margin: 20px auto;
-        }
-        canvas {
-            margin: 20px auto;
+            display: none;
         }
     </style>
 </head>
@@ -29,11 +30,12 @@
     <h1>Leitor e Gerador de Código de Barras</h1>
     <label for="barcode-input">Digite ou escaneie o número do código de barras:</label>
     <input type="text" id="barcode-input" placeholder="Ex: 15603722505604" />
+    <br>
     <button onclick="generateBarcode()">Gerar Código</button>
     <button onclick="startScanner()">Ler Código com Câmera</button>
-
+    <button onclick="stopScanner()">Parar Leitura</button>
     <div id="barcode-container"></div>
-    <div id="reader" style="display: none;"></div>
+    <div id="reader"></div>
 
     <!-- Importa as bibliotecas JsBarcode e Html5Qrcode -->
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.0/dist/JsBarcode.all.min.js"></script>
@@ -65,7 +67,7 @@
             }
         }
 
-        // Função para iniciar o scanner
+        // Função para iniciar o scanner de câmera
         function startScanner() {
             const readerContainer = document.getElementById('reader');
             readerContainer.style.display = 'block';
@@ -75,10 +77,12 @@
             }
 
             scanner.start(
-                { facingMode: "environment" }, // Usa a câmera traseira
-                { fps: 10, qrbox: 250 },
+                { facingMode: { exact: "environment" } }, // Usa a câmera traseira
+                { fps: 10, qrbox: { width: 300, height: 300 } },
                 (decodedText) => {
+                    console.log("Código detectado:", decodedText);
                     document.getElementById('barcode-input').value = decodedText;
+                    generateBarcode();
                     stopScanner(); // Para o scanner após leitura
                 },
                 (errorMessage) => {
@@ -86,6 +90,7 @@
                 }
             ).catch((err) => {
                 console.error("Erro ao iniciar o scanner: ", err);
+                alert("Erro ao acessar a câmera. Verifique as permissões ou tente em outro navegador.");
             });
         }
 
@@ -94,8 +99,9 @@
             if (scanner) {
                 scanner.stop().then(() => {
                     document.getElementById('reader').style.display = 'none';
+                    console.log("Scanner parado com sucesso.");
                 }).catch((err) => {
-                    console.error("Erro ao parar o scanner: ", err);
+                    console.error("Erro ao parar o scanner:", err);
                 });
             }
         }
