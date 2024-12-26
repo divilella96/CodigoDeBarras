@@ -112,8 +112,12 @@
                 img.onload = function() {
                     const codeReader = new ZXing.BrowserMultiFormatReader();
                     codeReader.decodeFromImage(img).then(result => {
-                        document.getElementById('barcode-input').value = result.text;
-                        generateBarcode(); // Gerar o código de barras com o número encontrado
+                        // Coloca o valor do código de barras lido no campo de entrada de texto
+                        const barcodeInput = document.getElementById('barcode-input');
+                        barcodeInput.value = result.text;  // O código lido é atribuído ao campo de input
+
+                        // Gera o código de barras correspondente ao número lido
+                        generateBarcode();
                     }).catch(err => {
                         logError("Erro ao ler o código de barras: " + err.message);
                     });
