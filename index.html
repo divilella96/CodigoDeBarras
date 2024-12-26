@@ -32,20 +32,8 @@
             color: #ff0000;
             border: 1px solid #ff0000;
             border-radius: 5px;
-            text-align: left;
             font-size: 14px;
             display: none;
-        }
-        #error-dashboard h3 {
-            margin: 0 0 10px 0;
-        }
-        #error-list {
-            margin: 0;
-            padding: 0;
-            list-style-type: none;
-        }
-        #error-list li {
-            margin-bottom: 5px;
         }
     </style>
 </head>
@@ -61,10 +49,7 @@
     <div id="reader"></div>
 
     <!-- Painel para exibição de erros -->
-    <div id="error-dashboard">
-        <h3>Erros:</h3>
-        <ul id="error-list"></ul>
-    </div>
+    <div id="error-dashboard"></div>
 
     <!-- Importa as bibliotecas JsBarcode e Html5Qrcode -->
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.0/dist/JsBarcode.all.min.js"></script>
@@ -84,7 +69,6 @@
                 container.appendChild(canvas);
 
                 try {
-                    // Gera o código de barras com o formato CODE128
                     JsBarcode(canvas, input, {
                         format: "CODE128",
                         displayValue: true,
@@ -96,7 +80,7 @@
                     logError("Erro ao gerar o código de barras: " + err.message);
                 }
             } else {
-                alert("Por favor, insira ou escaneie um número válido.");
+                logError("Nenhum número foi inserido para gerar o código de barras.");
             }
         }
 
@@ -113,16 +97,15 @@
                 { facingMode: { exact: "environment" } }, // Usa a câmera traseira
                 { fps: 10, qrbox: { width: 300, height: 300 } },
                 (decodedText) => {
-                    console.log("Código detectado:", decodedText);
                     document.getElementById('barcode-input').value = decodedText;
                     generateBarcode();
                     stopScanner(); // Para o scanner após leitura
                 },
                 (errorMessage) => {
-                    logError("Erro de leitura: " + errorMessage);
+                    logError("Erro de leitura do código de barras: " + errorMessage);
                 }
             ).catch((err) => {
-                logError("Erro ao iniciar o scanner: " + err.message);
+                logError("Erro ao acessar a câmera: " + err.message);
             });
         }
 
@@ -131,25 +114,19 @@
             if (scanner) {
                 scanner.stop().then(() => {
                     document.getElementById('reader').style.display = 'none';
-                    console.log("Scanner parado com sucesso.");
                 }).catch((err) => {
                     logError("Erro ao parar o scanner: " + err.message);
                 });
             }
         }
 
-        // Função para registrar e exibir erros no dashboard
+        // Função para registrar e exibir erros no painel
         function logError(message) {
             const dashboard = document.getElementById('error-dashboard');
-            const errorList = document.getElementById('error-list');
 
-            // Mostra o painel de erros
+            // Adiciona a mensagem ao painel
             dashboard.style.display = 'block';
-
-            // Adiciona o erro à lista
-            const listItem = document.createElement('li');
-            listItem.textContent = message;
-            errorList.appendChild(listItem);
+            dashboard.innerHTML += `<p>${message}</p>`;
 
             console.error(message);
         }
