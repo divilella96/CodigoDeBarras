@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerador de Código de Barras</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 20px;
+        }
+        input, button {
+            margin: 10px;
+            padding: 10px;
+            font-size: 16px;
+        }
+        #barcode-container {
+            margin: 20px auto;
+        }
+    </style>
+</head>
+<body>
+  <br><br>
+<a href="index.html">Ir para Leitor de Código de Barras</a>
+    <h1>Gerador de Código de Barras</h1>
+
+    <label for="barcode-input">Digite o número para gerar o código de barras:</label>
+    <input type="text" id="barcode-input" placeholder="Ex: 123456789012" />
+    <br><br>
+
+    <button onclick="generateBarcode()">Gerar Código</button>
+    <button onclick="clearBarcode()">Limpar</button>
+
+    <div id="barcode-container"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.0/dist/JsBarcode.all.min.js"></script>
+    <script>
+        function generateBarcode() {
+            const input = document.getElementById('barcode-input').value.trim();
+            const container = document.getElementById('barcode-container');
+
+            container.innerHTML = ''; // Limpa o container
+
+            if (input) {
+                const canvas = document.createElement('canvas');
+                container.appendChild(canvas);
+
+                try {
+                    JsBarcode(canvas, input, {
+                        format: "CODE128",
+                        displayValue: true,
+                        lineColor: "#000",
+                        width: 2,
+                        height: 60
+                    });
+                } catch (err) {
+                    alert("Erro ao gerar o código de barras: " + err.message);
+                }
+            } else {
+                alert("Por favor, insira um número válido para gerar o código de barras.");
+            }
+        }
+
+        function clearBarcode() {
+            const container = document.getElementById('barcode-container');
+            document.getElementById('barcode-input').value = '';
+            container.innerHTML = '';
+        }
+    </script>
+</body>
+</html>
