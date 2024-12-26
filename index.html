@@ -44,6 +44,11 @@
         #error-dashboard p {
             margin: 5px 0;
         }
+        #uploaded-image {
+            margin-top: 20px;
+            max-width: 100%;
+            max-height: 300px;
+        }
     </style>
 </head>
 <body>
@@ -61,6 +66,9 @@
 
     <div id="barcode-container"></div>
     <div id="reader"></div>
+
+    <!-- Exibir a imagem carregada -->
+    <img id="uploaded-image" src="" alt="Imagem do código de barras" style="display:none;" />
 
     <!-- Painel para exibição de erros -->
     <div id="error-dashboard">
@@ -109,17 +117,21 @@
                 const img = new Image();
                 img.src = e.target.result;
 
+                // Exibe a imagem carregada
+                const uploadedImage = document.getElementById('uploaded-image');
+                uploadedImage.src = img.src;
+                uploadedImage.style.display = 'block';  // Exibe a imagem na página
+
                 img.onload = function() {
                     const codeReader = new ZXing.BrowserMultiFormatReader();
                     codeReader.decodeFromImage(img).then(result => {
                         // Coloca o valor do código de barras lido no campo de entrada de texto
                         const barcodeInput = document.getElementById('barcode-input');
-                        barcode-input.value = result.text;  // O código lido é atribuído ao campo de input
+                        barcodeInput.value = result.text;  // O código lido é atribuído ao campo de input
 
                         // Gera o código de barras correspondente ao número lido
                         generateBarcode();
                     }).catch(err => {
-                        barcode-input.value = 000000;
                         logError("Erro ao ler o código de barras: " + err.message);
                     });
                 };
