@@ -10,18 +10,16 @@
             text-align: center;
             margin: 20px;
         }
-        input, button, select {
+        input, button {
             margin: 10px;
             padding: 10px;
             font-size: 16px;
-        }
-        #barcode-container {
-            margin: 20px auto;
         }
         #uploaded-image {
             margin-top: 20px;
             max-width: 100%;
             max-height: 300px;
+            display: none;
         }
         #loading-message {
             margin: 20px auto;
@@ -30,158 +28,98 @@
             font-weight: bold;
             display: none;
         }
-        #success-message {
+        #success-message, #error-message {
             margin-top: 20px;
-            color: green;
             font-size: 16px;
             display: none;
         }
+        #success-message {
+            color: green;
+        }
         #error-message {
-            margin-top: 20px;
             color: red;
-            font-size: 16px;
-            display: none;
         }
     </style>
 </head>
 <body>
     <h1>Leitor e Gerador de Código de Barras</h1>
+
     <label for="barcode-input">Digite ou escaneie o número do código de barras:</label>
     <input type="text" id="barcode-input" placeholder="Ex: 15603722505604" />
-    <br>
-    <button onclick="generateBarcode()">Gerar Código</button>
     <br><br>
 
-    <!-- Upload de imagem -->
     <label for="barcode-image">Escolha uma imagem com código de barras:</label>
     <input type="file" id="barcode-image" accept="image/*" />
     <br><br>
 
     <button onclick="validateImage()">Validar Código de Barras</button>
 
-    <!-- Exibição do carregamento -->
     <div id="loading-message">Processando...</div>
-
-    <!-- Exibir a imagem carregada -->
-    <img id="uploaded-image" src="" alt="Imagem do código de barras" style="display:none;" />
-
-    <!-- Mensagens de sucesso e erro -->
     <div id="success-message"></div>
     <div id="error-message"></div>
+    <img id="uploaded-image" alt="Imagem carregada" />
 
-    <!-- Campo para exibir o código lido -->
-    <div>
-        <input type="text" id="barcode-output" readonly />
-        <button onclick="copyToClipboard()">Copiar Código</button>
-    </div>
+    <br><br>
+    <label for="barcode-output">Código Lido:</label>
+    <input type="text" id="barcode-output" readonly />
+    <button onclick="copyToClipboard()">Copiar Código</button>
 
-    <!-- Importa as bibliotecas JsBarcode e zxing-js -->
-    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.0/dist/JsBarcode.all.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.18.7/umd/index.min.js"></script>
     <script>
-        // Função para gerar código de barras
-        function generateBarcode() {
-            const input = document.getElementById('barcode-input').value.trim();
-            const container = document.getElementById('barcode-container');
-
-            container.innerHTML = ''; // Limpa o container
-
-            if (input) {
-                const canvas = document.createElement('canvas');
-                container.appendChild(canvas);
-
-                try {
-                    JsBarcode(canvas, input, {
-                        format: "CODE128",
-                        displayValue: true,
-                        lineColor: "#000",
-                        width: 2,
-                        height: 60
-                    });
-                } catch (err) {
-                    alert("Erro ao gerar o código de barras: " + err.message);
-                }
-            } else {
-                alert("Nenhum número foi inserido para gerar o código de barras.");
-            }
-        }
-
-        // Função para ler o código de barras a partir de uma imagem
-        function readBarcodeFromImage(img) {
-            const codeReader = new ZXing.BrowserMultiFormatReader();
-            return codeReader.decodeFromImage(img); // Retorna uma promise com o resultado
-        }
-
-        // Função para validar a imagem e tentar ler o código
-        function validateImage() {
+        // Função para processar a imagem
+        async function validateImage() {
             const fileInput = document.getElementById('barcode-image');
             const file = fileInput.files[0];
             const loadingMessage = document.getElementById('loading-message');
             const successMessage = document.getElementById('success-message');
             const errorMessage = document.getElementById('error-message');
             const uploadedImage = document.getElementById('uploaded-image');
+            const barcodeOutput = document.getElementById('barcode-output');
+
+            // Resetando mensagens
+            loadingMessage.style.display = 'block';
+            loadingMessage.innerText = "Processando...";
+            successMessage.style.display = 'none';
+            errorMessage.style.display = 'none';
+            barcodeOutput.value = "";
 
             if (!file) {
-                alert("Por favor, escolha uma imagem primeiro.");
+                loadingMessage.style.display = 'none';
+                errorMessage.style.display = 'block';
+                errorMessage.innerText = "Nenhuma imagem foi selecionada!";
                 return;
             }
 
-            // Limpa mensagens anteriores
-            successMessage.style.display = 'none';
-            errorMessage.style.display = 'none';
-            loadingMessage.style.display = 'block';
-            loadingMessage.innerText = "Processando...";
-
+            // Exibir a imagem carregada
             const reader = new FileReader();
             reader.onload = function(e) {
-                const img = new Image();
-                img.src = e.target.result;
-
-                // Exibe a imagem carregada
-                uploadedImage.src = img.src;
+                uploadedImage.src = e.target.result;
                 uploadedImage.style.display = 'block';
-
-                img.onload = function() {
-                    const timeout = setTimeout(() => {
-                        loadingMessage.innerText = "Processo expirou, tente novamente.";
-                        loadingMessage.style.color = 'red';
-                    }, 10000); // Timeout de 10 segundos
-
-                    readBarcodeFromImage(img)
-                        .then(result => {
-                            clearTimeout(timeout); // Cancela o timeout
-                            loadingMessage.style.display = 'none';
-
-                            // Exibe a mensagem de sucesso
-                            successMessage.innerHTML = `Código lido com sucesso: ${result.text}`;
-                            successMessage.style.display = 'block';
-
-                            // Preenche o campo de texto com o código lido
-                            const barcodeOutput = document.getElementById('barcode-output');
-                            barcodeOutput.value = result.text;
-
-                            // Adiciona o código lido no input principal
-                            const barcodeInput = document.getElementById('barcode-input');
-                            barcodeInput.value = result.text;
-
-                            // Gera o código de barras correspondente
-                            generateBarcode();
-                        })
-                        .catch(err => {
-                            clearTimeout(timeout); // Cancela o timeout
-                            loadingMessage.style.display = 'none';
-
-                            // Exibe a mensagem de erro
-                            errorMessage.innerHTML = "Erro ao ler o código de barras: " + err.message;
-                            errorMessage.style.display = 'block';
-                        });
-                };
             };
-
             reader.readAsDataURL(file);
+
+            // Esperar a imagem carregar
+            uploadedImage.onload = async () => {
+                try {
+                    const codeReader = new ZXing.BrowserMultiFormatReader();
+                    const result = await codeReader.decodeFromImage(uploadedImage);
+
+                    loadingMessage.style.display = 'none';
+                    successMessage.style.display = 'block';
+                    successMessage.innerText = `Código lido com sucesso: ${result.text}`;
+
+                    // Exibir o código no campo de texto
+                    barcodeOutput.value = result.text;
+                } catch (err) {
+                    loadingMessage.style.display = 'none';
+                    errorMessage.style.display = 'block';
+                    errorMessage.innerText = `Erro ao ler o código de barras: ${err.message}`;
+                    console.error("Erro durante a leitura:", err);
+                }
+            };
         }
 
-        // Função para copiar o código de barras lido para a área de transferência
+        // Função para copiar o código lido
         function copyToClipboard() {
             const barcodeOutput = document.getElementById('barcode-output');
             barcodeOutput.select();
