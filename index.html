@@ -24,6 +24,29 @@
             margin: 20px auto;
             display: none;
         }
+        #error-dashboard {
+            margin: 20px auto;
+            padding: 10px;
+            max-width: 400px;
+            background-color: #ffe6e6;
+            color: #ff0000;
+            border: 1px solid #ff0000;
+            border-radius: 5px;
+            text-align: left;
+            font-size: 14px;
+            display: none;
+        }
+        #error-dashboard h3 {
+            margin: 0 0 10px 0;
+        }
+        #error-list {
+            margin: 0;
+            padding: 0;
+            list-style-type: none;
+        }
+        #error-list li {
+            margin-bottom: 5px;
+        }
     </style>
 </head>
 <body>
@@ -36,6 +59,12 @@
     <button onclick="stopScanner()">Parar Leitura</button>
     <div id="barcode-container"></div>
     <div id="reader"></div>
+
+    <!-- Painel para exibição de erros -->
+    <div id="error-dashboard">
+        <h3>Erros:</h3>
+        <ul id="error-list"></ul>
+    </div>
 
     <!-- Importa as bibliotecas JsBarcode e Html5Qrcode -->
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.0/dist/JsBarcode.all.min.js"></script>
@@ -54,14 +83,18 @@
                 const canvas = document.createElement('canvas');
                 container.appendChild(canvas);
 
-                // Gera o código de barras com o formato CODE128
-                JsBarcode(canvas, input, {
-                    format: "CODE128",
-                    displayValue: true,
-                    lineColor: "#000",
-                    width: 2,
-                    height: 60
-                });
+                try {
+                    // Gera o código de barras com o formato CODE128
+                    JsBarcode(canvas, input, {
+                        format: "CODE128",
+                        displayValue: true,
+                        lineColor: "#000",
+                        width: 2,
+                        height: 60
+                    });
+                } catch (err) {
+                    logError("Erro ao gerar o código de barras: " + err.message);
+                }
             } else {
                 alert("Por favor, insira ou escaneie um número válido.");
             }
@@ -86,11 +119,10 @@
                     stopScanner(); // Para o scanner após leitura
                 },
                 (errorMessage) => {
-                    console.warn("Erro de leitura: ", errorMessage);
+                    logError("Erro de leitura: " + errorMessage);
                 }
             ).catch((err) => {
-                console.error("Erro ao iniciar o scanner: ", err);
-                alert("Erro ao acessar a câmera. Verifique as permissões ou tente em outro navegador.");
+                logError("Erro ao iniciar o scanner: " + err.message);
             });
         }
 
@@ -101,9 +133,25 @@
                     document.getElementById('reader').style.display = 'none';
                     console.log("Scanner parado com sucesso.");
                 }).catch((err) => {
-                    console.error("Erro ao parar o scanner:", err);
+                    logError("Erro ao parar o scanner: " + err.message);
                 });
             }
+        }
+
+        // Função para registrar e exibir erros no dashboard
+        function logError(message) {
+            const dashboard = document.getElementById('error-dashboard');
+            const errorList = document.getElementById('error-list');
+
+            // Mostra o painel de erros
+            dashboard.style.display = 'block';
+
+            // Adiciona o erro à lista
+            const listItem = document.createElement('li');
+            listItem.textContent = message;
+            errorList.appendChild(listItem);
+
+            console.error(message);
         }
     </script>
 </body>
