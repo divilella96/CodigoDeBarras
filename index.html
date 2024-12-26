@@ -15,9 +15,8 @@
             padding: 10px;
             font-size: 16px;
         }
-        #reader {
-            width: 100%;
-            max-width: 400px;
+        #scanner-container {
+            display: none;
             margin: 20px auto;
         }
         canvas {
@@ -33,14 +32,16 @@
     <button onclick="startScanner()">Ler Código com Câmera</button>
 
     <div id="barcode-container"></div>
-    <div id="reader" style="display: none;"></div>
+    <div id="scanner-container">
+        <h2>Posicione o código de barras na frente da câmera</h2>
+        <video id="scanner" autoplay></video>
+        <button onclick="stopScanner()">Parar Scanner</button>
+    </div>
 
-    <!-- Importa as bibliotecas JsBarcode e Html5Qrcode -->
+    <!-- Importa as bibliotecas JsBarcode e QuaggaJS -->
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.0/dist/JsBarcode.all.min.js"></script>
-    <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
     <script>
-        let scanner;
-
         // Função para gerar código de barras
         function generateBarcode() {
             const input = document.getElementById('barcode-input').value.trim();
@@ -67,37 +68,39 @@
 
         // Função para iniciar o scanner
         function startScanner() {
-            const readerContainer = document.getElementById('reader');
-            readerContainer.style.display = 'block';
+            const scannerContainer = document.getElementById('scanner-container');
+            scannerContainer.style.display = 'block';
 
-            if (!scanner) {
-                scanner = new Html5Qrcode("reader");
-            }
-
-            scanner.start(
-                { facingMode: "environment" }, // Usa a câmera traseira
-                { fps: 10, qrbox: 250 },
-                (decodedText) => {
-                    document.getElementById('barcode-input').value = decodedText;
-                    stopScanner(); // Para o scanner após leitura
+            Quagga.init({
+                inputStream: {
+                    name: "Live",
+                    type: "LiveStream",
+                    target: document.querySelector('#scanner')
                 },
-                (errorMessage) => {
-                    console.warn("Erro de leitura: ", errorMessage);
+                decoder: {
+                    readers: ["code_128_reader", "ean_reader", "ean_8_reader", "upc_reader"]
                 }
-            ).catch((err) => {
-                console.error("Erro ao iniciar o scanner: ", err);
+            }, function(err) {
+                if (err) {
+                    console.error(err);
+                    alert("Erro ao acessar a câmera.");
+                    return;
+                }
+                Quagga.start();
+            });
+
+            // Detecta o código de barras
+            Quagga.onDetected(function(data) {
+                const barcode = data.codeResult.code;
+                document.getElementById('barcode-input').value = barcode;
+                stopScanner(); // Para o scanner após leitura
             });
         }
 
         // Função para parar o scanner
         function stopScanner() {
-            if (scanner) {
-                scanner.stop().then(() => {
-                    document.getElementById('reader').style.display = 'none';
-                }).catch((err) => {
-                    console.error("Erro ao parar o scanner: ", err);
-                });
-            }
+            Quagga.stop();
+            document.getElementById('scanner-container').style.display = 'none';
         }
     </script>
 </body>
