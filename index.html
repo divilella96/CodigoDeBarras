@@ -114,11 +114,12 @@
                     codeReader.decodeFromImage(img).then(result => {
                         // Coloca o valor do código de barras lido no campo de entrada de texto
                         const barcodeInput = document.getElementById('barcode-input');
-                        barcodeInput.value = result.text;  // O código lido é atribuído ao campo de input
+                        barcode-input.value = result.text;  // O código lido é atribuído ao campo de input
 
                         // Gera o código de barras correspondente ao número lido
                         generateBarcode();
                     }).catch(err => {
+                        barcode-input.value = 000000;
                         logError("Erro ao ler o código de barras: " + err.message);
                     });
                 };
