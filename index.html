@@ -10,7 +10,7 @@
             text-align: center;
             margin: 20px;
         }
-        input, button {
+        input, button, select {
             margin: 10px;
             padding: 10px;
             font-size: 16px;
@@ -54,6 +54,10 @@
     <button onclick="generateBarcode()">Gerar Código</button>
     <button onclick="startScanner()">Ler Código com Câmera</button>
     <button onclick="stopScanner()">Parar Leitura</button>
+    <button onclick="requestPermissions()">Solicitar Permissões</button>
+    <br>
+    <label for="camera-select">Selecione a Câmera:</label>
+    <select id="camera-select"></select>
     <div id="barcode-container"></div>
     <div id="reader"></div>
 
@@ -68,6 +72,7 @@
     <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
     <script>
         let scanner;
+        let currentCameraId = null;
 
         // Função para gerar código de barras
         function generateBarcode() {
@@ -105,8 +110,13 @@
                 scanner = new Html5Qrcode("reader");
             }
 
+            if (!currentCameraId) {
+                logError("Nenhuma câmera selecionada. Escolha uma câmera na lista.");
+                return;
+            }
+
             scanner.start(
-                { facingMode: "environment" }, // Usa a câmera traseira
+                { deviceId: currentCameraId }, // Usa a câmera selecionada
                 { fps: 10, qrbox: { width: 250, height: 250 } },
                 (decodedText) => {
                     document.getElementById('barcode-input').value = decodedText;
@@ -118,7 +128,6 @@
                 }
             ).catch((err) => {
                 logError("Erro ao iniciar o scanner: " + err.message);
-                checkCameraPermissions();
             });
         }
 
@@ -133,22 +142,45 @@
             }
         }
 
-        // Verifica permissões e dispositivos
-        function checkCameraPermissions() {
+        // Lista câmeras disponíveis e atualiza o select
+        function listCameras() {
             navigator.mediaDevices.enumerateDevices()
                 .then(devices => {
+                    const cameraSelect = document.getElementById('camera-select');
+                    cameraSelect.innerHTML = ''; // Limpa o select
+
                     const cameras = devices.filter(device => device.kind === 'videoinput');
                     if (cameras.length === 0) {
                         logError("Nenhuma câmera foi detectada no dispositivo.");
-                    } else {
-                        logError(`Câmeras detectadas: ${cameras.length}`);
-                        cameras.forEach((camera, index) => {
-                            logError(`Câmera ${index + 1}: ${camera.label || "Sem nome"}`);
-                        });
+                        return;
                     }
+
+                    cameras.forEach((camera, index) => {
+                        const option = document.createElement('option');
+                        option.value = camera.deviceId;
+                        option.textContent = camera.label || `Câmera ${index + 1}`;
+                        cameraSelect.appendChild(option);
+                    });
+
+                    currentCameraId = cameras[0]?.deviceId;
+                    cameraSelect.addEventListener('change', (event) => {
+                        currentCameraId = event.target.value;
+                    });
                 })
                 .catch(err => {
-                    logError("Erro ao verificar dispositivos: " + err.message);
+                    logError("Erro ao listar câmeras: " + err.message);
+                });
+        }
+
+        // Solicita permissões novamente
+        function requestPermissions() {
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(() => {
+                    logError("Permissões concedidas com sucesso.");
+                    listCameras();
+                })
+                .catch(err => {
+                    logError("Erro ao solicitar permissões: " + err.message);
                 });
         }
 
@@ -161,6 +193,11 @@
             errorMessages.innerHTML += `<p>${message}</p>`;
             console.error(message);
         }
+
+        // Inicializa a lista de câmeras ao carregar a página
+        document.addEventListener('DOMContentLoaded', () => {
+            listCameras();
+        });
     </script>
 </body>
 </html>
