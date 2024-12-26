@@ -20,10 +20,10 @@
         }
         #reader {
             width: 100%;
-            height: 200px; /* Ajuste para dispositivos móveis */
+            height: 200px;
             margin: 20px auto;
             border: 1px solid #ddd;
-            background-color: #f0f0f0; /* Para depuração */
+            background-color: #f0f0f0;
             display: none;
         }
         #error-dashboard {
@@ -52,12 +52,13 @@
     <input type="text" id="barcode-input" placeholder="Ex: 15603722505604" />
     <br>
     <button onclick="generateBarcode()">Gerar Código</button>
-    <button onclick="startScanner()">Ler Código com Câmera</button>
-    <button onclick="stopScanner()">Parar Leitura</button>
-    <button onclick="requestPermissions()">Solicitar Permissões</button>
-    <br>
-    <label for="camera-select">Selecione a Câmera:</label>
-    <select id="camera-select"></select>
+    <br><br>
+
+    <!-- Upload de imagem -->
+    <label for="barcode-image">Escolha uma imagem com código de barras:</label>
+    <input type="file" id="barcode-image" accept="image/*" onchange="readBarcodeFromImage(event)" />
+    <br><br>
+
     <div id="barcode-container"></div>
     <div id="reader"></div>
 
@@ -67,13 +68,10 @@
         <div id="error-messages"></div>
     </div>
 
-    <!-- Importa as bibliotecas JsBarcode e Html5Qrcode -->
+    <!-- Importa as bibliotecas JsBarcode e zxing-js -->
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.0/dist/JsBarcode.all.min.js"></script>
-    <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.18.7/umd/index.min.js"></script>
     <script>
-        let scanner;
-        let currentCameraId = null;
-
         // Função para gerar código de barras
         function generateBarcode() {
             const input = document.getElementById('barcode-input').value.trim();
@@ -101,96 +99,28 @@
             }
         }
 
-        // Função para iniciar o scanner de câmera
-        function startScanner() {
-            const readerContainer = document.getElementById('reader');
-            readerContainer.style.display = 'block';
+        // Função para ler o código de barras a partir de uma imagem
+        function readBarcodeFromImage(event) {
+            const file = event.target.files[0];
+            if (!file) return;
 
-            if (!scanner) {
-                console.log("Inicializando scanner...");
-                scanner = new Html5Qrcode("reader");
-            }
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.src = e.target.result;
 
-            if (!currentCameraId) {
-                logError("Nenhuma câmera selecionada. Escolha uma câmera na lista.");
-                return;
-            }
-
-            console.log("Iniciando scanner com câmera:", currentCameraId);
-
-            scanner.start(
-                { deviceId: currentCameraId }, // Usa a câmera selecionada
-                { fps: 10, qrbox: { width: 250, height: 250 } },
-                (decodedText) => {
-                    document.getElementById('barcode-input').value = decodedText;
-                    generateBarcode();
-                    stopScanner(); // Para o scanner após leitura
-                },
-                (errorMessage) => {
-                    console.error("Erro ao tentar escanear:", errorMessage);
-                    logError("Erro ao tentar escanear: " + errorMessage);
-                }
-            ).catch((err) => {
-                console.error("Erro ao iniciar o scanner:", err);
-                logError("Erro ao iniciar o scanner: " + err.message);
-            });
-        }
-
-        // Função para parar o scanner
-        function stopScanner() {
-            if (scanner) {
-                scanner.stop().then(() => {
-                    document.getElementById('reader').style.display = 'none';
-                }).catch((err) => {
-                    logError("Erro ao parar o scanner: " + err.message);
-                });
-            }
-        }
-
-        // Lista câmeras disponíveis e atualiza o select
-        function listCameras() {
-            navigator.mediaDevices.enumerateDevices()
-                .then(devices => {
-                    const cameraSelect = document.getElementById('camera-select');
-                    cameraSelect.innerHTML = ''; // Limpa o select
-
-                    const cameras = devices.filter(device => device.kind === 'videoinput');
-                    if (cameras.length === 0) {
-                        logError("Nenhuma câmera foi detectada no dispositivo.");
-                        return;
-                    }
-
-                    cameras.forEach((camera, index) => {
-                        const option = document.createElement('option');
-                        option.value = camera.deviceId;
-                        option.textContent = camera.label || `Câmera ${index + 1}`;
-                        cameraSelect.appendChild(option);
+                img.onload = function() {
+                    const codeReader = new ZXing.BrowserMultiFormatReader();
+                    codeReader.decodeFromImage(img).then(result => {
+                        document.getElementById('barcode-input').value = result.text;
+                        generateBarcode(); // Gerar o código de barras com o número encontrado
+                    }).catch(err => {
+                        logError("Erro ao ler o código de barras: " + err.message);
                     });
+                };
+            };
 
-                    currentCameraId = cameras[0]?.deviceId;
-                    cameraSelect.addEventListener('change', (event) => {
-                        currentCameraId = event.target.value;
-                        console.log("Câmera selecionada:", currentCameraId); // Log para depuração
-                    });
-
-                    console.log("Câmeras detectadas:", cameras);
-                })
-                .catch(err => {
-                    logError("Erro ao listar câmeras: " + err.message);
-                });
-        }
-
-        // Solicita permissões novamente
-        function requestPermissions() {
-            navigator.mediaDevices.getUserMedia({ video: true })
-                .then(() => {
-                    logError("Permissões concedidas com sucesso.");
-                    listCameras();
-                })
-                .catch(err => {
-                    logError("Erro ao solicitar permissões: " + err.message);
-                    console.log("Erro ao solicitar permissões:", err); // Log adicional
-                });
+            reader.readAsDataURL(file);
         }
 
         // Função para registrar e exibir erros no painel
@@ -202,11 +132,6 @@
             errorMessages.innerHTML += `<p>${message}</p>`;
             console.error(message);
         }
-
-        // Inicializa a lista de câmeras ao carregar a página
-        document.addEventListener('DOMContentLoaded', () => {
-            listCameras();
-        });
     </script>
 </body>
 </html>
