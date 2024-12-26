@@ -18,51 +18,35 @@
         #barcode-container {
             margin: 20px auto;
         }
-        #reader {
-            width: 100%;
-            height: 200px;
-            margin: 20px auto;
-            border: 1px solid #ddd;
-            background-color: #f0f0f0;
-            display: none;
-        }
-        #error-dashboard {
-            margin: 20px auto;
-            padding: 10px;
-            max-width: 400px;
-            background-color: #ffe6e6;
-            color: #ff0000;
-            border: 1px solid #ff0000;
-            border-radius: 5px;
-            text-align: left;
-            font-size: 14px;
-            display: none;
-        }
-        #error-dashboard h3 {
-            margin: 0 0 10px 0;
-        }
-        #error-dashboard p {
-            margin: 5px 0;
-        }
         #uploaded-image {
             margin-top: 20px;
             max-width: 100%;
             max-height: 300px;
         }
+        #loading-message {
+            margin: 20px auto;
+            color: #007BFF;
+            font-size: 18px;
+            font-weight: bold;
+            display: none;
+        }
         #success-message {
             margin-top: 20px;
             color: green;
             font-size: 16px;
+            display: none;
         }
         #error-message {
             margin-top: 20px;
             color: red;
             font-size: 16px;
+            display: none;
         }
         #copied-message {
             margin-top: 10px;
             font-size: 14px;
             color: green;
+            display: none;
         }
     </style>
 </head>
@@ -81,26 +65,20 @@
 
     <button onclick="validateImage()">Validar Código de Barras</button>
 
-    <div id="barcode-container"></div>
-    <div id="reader"></div>
+    <!-- Exibição do carregamento -->
+    <div id="loading-message">Processando a imagem, por favor, aguarde...</div>
 
     <!-- Exibir a imagem carregada -->
     <img id="uploaded-image" src="" alt="Imagem do código de barras" style="display:none;" />
 
     <!-- Mensagens de sucesso e erro -->
-    <div id="success-message" style="display: none;"></div>
-    <div id="error-message" style="display: none;"></div>
+    <div id="success-message"></div>
+    <div id="error-message"></div>
 
     <!-- Campo para exibir o código lido -->
     <div>
         <input type="text" id="barcode-output" readonly />
         <button onclick="copyToClipboard()">Copiar Código</button>
-    </div>
-
-    <!-- Painel para exibição de erros -->
-    <div id="error-dashboard">
-        <h3>Erros:</h3>
-        <div id="error-messages"></div>
     </div>
 
     <!-- Importa as bibliotecas JsBarcode e zxing-js -->
@@ -127,49 +105,39 @@
                         height: 60
                     });
                 } catch (err) {
-                    logError("Erro ao gerar o código de barras: " + err.message);
+                    alert("Erro ao gerar o código de barras: " + err.message);
                 }
             } else {
-                logError("Nenhum número foi inserido para gerar o código de barras.");
+                alert("Nenhum número foi inserido para gerar o código de barras.");
             }
         }
 
         // Função para ler o código de barras a partir de uma imagem
         function readBarcodeFromImage(img) {
             const codeReader = new ZXing.BrowserMultiFormatReader();
-            codeReader.decodeFromImage(img).then(result => {
-                // Coloca o valor do código de barras lido no campo de entrada de texto
-                const barcodeInput = document.getElementById('barcode-input');
-                barcodeInput.value = result.text;  // O código lido é atribuído ao campo de input
-
-                // Exibe a mensagem de sucesso
-                document.getElementById('success-message').innerHTML = `Código lido com sucesso: ${result.text}`;
-                document.getElementById('success-message').style.display = 'block';
-                document.getElementById('error-message').style.display = 'none';
-
-                // Exibe o código lido no campo de saída
-                const barcodeOutput = document.getElementById('barcode-output');
-                barcodeOutput.value = result.text;
-
-                // Gera o código de barras correspondente ao número lido
-                generateBarcode();
-            }).catch(err => {
-                // Exibe a mensagem de erro
-                document.getElementById('error-message').innerHTML = "Erro ao ler o código de barras: " + err.message;
-                document.getElementById('error-message').style.display = 'block';
-                document.getElementById('success-message').style.display = 'none';
-            });
+            return codeReader.decodeFromImage(img); // Retorna uma promise com o resultado
         }
 
         // Função para validar a imagem e tentar ler o código
         function validateImage() {
             const fileInput = document.getElementById('barcode-image');
             const file = fileInput.files[0];
+            const loadingMessage = document.getElementById('loading-message');
+            const successMessage = document.getElementById('success-message');
+            const errorMessage = document.getElementById('error-message');
+            const uploadedImage = document.getElementById('uploaded-image');
 
             if (!file) {
                 alert("Por favor, escolha uma imagem primeiro.");
                 return;
             }
+
+            // Limpa mensagens anteriores
+            successMessage.style.display = 'none';
+            errorMessage.style.display = 'none';
+
+            // Exibe o indicador de carregamento
+            loadingMessage.style.display = 'block';
 
             const reader = new FileReader();
             reader.onload = function(e) {
@@ -177,12 +145,38 @@
                 img.src = e.target.result;
 
                 // Exibe a imagem carregada
-                const uploadedImage = document.getElementById('uploaded-image');
                 uploadedImage.src = img.src;
-                uploadedImage.style.display = 'block';  // Exibe a imagem na página
+                uploadedImage.style.display = 'block';
 
                 img.onload = function() {
-                    readBarcodeFromImage(img); // Tenta ler o código de barras da imagem
+                    readBarcodeFromImage(img)
+                        .then(result => {
+                            // Esconde o indicador de carregamento
+                            loadingMessage.style.display = 'none';
+
+                            // Exibe a mensagem de sucesso
+                            successMessage.innerHTML = `Código lido com sucesso: ${result.text}`;
+                            successMessage.style.display = 'block';
+
+                            // Preenche o campo de texto com o código lido
+                            const barcodeOutput = document.getElementById('barcode-output');
+                            barcodeOutput.value = result.text;
+
+                            // Adiciona o código lido no input principal
+                            const barcodeInput = document.getElementById('barcode-input');
+                            barcodeInput.value = result.text;
+
+                            // Gera o código de barras correspondente
+                            generateBarcode();
+                        })
+                        .catch(err => {
+                            // Esconde o indicador de carregamento
+                            loadingMessage.style.display = 'none';
+
+                            // Exibe a mensagem de erro
+                            errorMessage.innerHTML = "Erro ao ler o código de barras: " + err.message;
+                            errorMessage.style.display = 'block';
+                        });
                 };
             };
 
@@ -194,19 +188,7 @@
             const barcodeOutput = document.getElementById('barcode-output');
             barcodeOutput.select();
             document.execCommand('copy');
-            const copiedMessage = document.getElementById('copied-message');
-            copiedMessage.textContent = "Código copiado para a área de transferência!";
-            copiedMessage.style.display = 'block';
-        }
-
-        // Função para registrar e exibir erros no painel
-        function logError(message) {
-            const dashboard = document.getElementById('error-dashboard');
-            const errorMessages = document.getElementById('error-messages');
-
-            dashboard.style.display = 'block';
-            errorMessages.innerHTML += `<p>${message}</p>`;
-            console.error(message);
+            alert("Código copiado para a área de transferência!");
         }
     </script>
 </body>
