@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gerador de Código de Barras</title>
+    <title>Leitor e Gerador de Código de Barras</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -15,22 +15,34 @@
             padding: 10px;
             font-size: 16px;
         }
+        #scanner-container {
+            display: none;
+            margin: 20px auto;
+        }
         canvas {
             margin: 20px auto;
         }
     </style>
 </head>
 <body>
-    <h1>Gerador de Código de Barras</h1>
-    <label for="barcode-input">Digite o número do código de barras:</label>
+    <h1>Leitor e Gerador de Código de Barras</h1>
+    <label for="barcode-input">Digite ou escaneie o número do código de barras:</label>
     <input type="text" id="barcode-input" placeholder="Ex: 15603722505604" />
     <button onclick="generateBarcode()">Gerar Código</button>
+    <button onclick="startScanner()">Ler Código com Câmera</button>
 
     <div id="barcode-container"></div>
+    <div id="scanner-container">
+        <h2>Posicione o código de barras na frente da câmera</h2>
+        <video id="scanner" autoplay></video>
+        <button onclick="stopScanner()">Parar Scanner</button>
+    </div>
 
-    <!-- Importa a biblioteca JsBarcode -->
+    <!-- Importa as bibliotecas JsBarcode e QuaggaJS -->
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.0/dist/JsBarcode.all.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
     <script>
+        // Função para gerar código de barras
         function generateBarcode() {
             const input = document.getElementById('barcode-input').value.trim();
             const container = document.getElementById('barcode-container');
@@ -43,15 +55,52 @@
 
                 // Gera o código de barras com o formato CODE128
                 JsBarcode(canvas, input, {
-                    format: "CODE128", // Formato que aceita 14 dígitos ou mais
+                    format: "CODE128",
                     displayValue: true,
                     lineColor: "#000",
                     width: 2,
                     height: 60
                 });
             } else {
-                alert("Por favor, insira um número válido.");
+                alert("Por favor, insira ou escaneie um número válido.");
             }
+        }
+
+        // Função para iniciar o scanner
+        function startScanner() {
+            const scannerContainer = document.getElementById('scanner-container');
+            scannerContainer.style.display = 'block';
+
+            Quagga.init({
+                inputStream: {
+                    name: "Live",
+                    type: "LiveStream",
+                    target: document.querySelector('#scanner')
+                },
+                decoder: {
+                    readers: ["code_128_reader", "ean_reader", "ean_8_reader", "upc_reader"]
+                }
+            }, function(err) {
+                if (err) {
+                    console.error(err);
+                    alert("Erro ao acessar a câmera.");
+                    return;
+                }
+                Quagga.start();
+            });
+
+            // Detecta o código de barras
+            Quagga.onDetected(function(data) {
+                const barcode = data.codeResult.code;
+                document.getElementById('barcode-input').value = barcode;
+                stopScanner(); // Para o scanner após leitura
+            });
+        }
+
+        // Função para parar o scanner
+        function stopScanner() {
+            Quagga.stop();
+            document.getElementById('scanner-container').style.display = 'none';
         }
     </script>
 </body>
