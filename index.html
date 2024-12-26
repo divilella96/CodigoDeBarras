@@ -20,10 +20,10 @@
         }
         #reader {
             width: 100%;
-            max-width: 400px;
-            height: 300px;
+            height: 200px; /* Ajuste para dispositivos móveis */
             margin: 20px auto;
             border: 1px solid #ddd;
+            background-color: #f0f0f0; /* Para depuração */
             display: none;
         }
         #error-dashboard {
@@ -107,6 +107,7 @@
             readerContainer.style.display = 'block';
 
             if (!scanner) {
+                console.log("Inicializando scanner...");
                 scanner = new Html5Qrcode("reader");
             }
 
@@ -114,6 +115,8 @@
                 logError("Nenhuma câmera selecionada. Escolha uma câmera na lista.");
                 return;
             }
+
+            console.log("Iniciando scanner com câmera:", currentCameraId);
 
             scanner.start(
                 { deviceId: currentCameraId }, // Usa a câmera selecionada
@@ -124,9 +127,11 @@
                     stopScanner(); // Para o scanner após leitura
                 },
                 (errorMessage) => {
+                    console.error("Erro ao tentar escanear:", errorMessage);
                     logError("Erro ao tentar escanear: " + errorMessage);
                 }
             ).catch((err) => {
+                console.error("Erro ao iniciar o scanner:", err);
                 logError("Erro ao iniciar o scanner: " + err.message);
             });
         }
@@ -165,7 +170,10 @@
                     currentCameraId = cameras[0]?.deviceId;
                     cameraSelect.addEventListener('change', (event) => {
                         currentCameraId = event.target.value;
+                        console.log("Câmera selecionada:", currentCameraId); // Log para depuração
                     });
+
+                    console.log("Câmeras detectadas:", cameras);
                 })
                 .catch(err => {
                     logError("Erro ao listar câmeras: " + err.message);
@@ -181,6 +189,7 @@
                 })
                 .catch(err => {
                     logError("Erro ao solicitar permissões: " + err.message);
+                    console.log("Erro ao solicitar permissões:", err); // Log adicional
                 });
         }
 
